@@ -133,15 +133,19 @@ class _OddsInputState extends State<_OddsInput> {
           Focus(
             onFocusChange: (hasFocus) {
               if (hasFocus) return;
-              final v = double.tryParse(_oddsText.text);
-              final clamped = (v ?? 0.01).clamp(0.01, 99);
-              final formatted = clamped.toString();
+              final double? value = double.tryParse(_oddsText.text);
+              final double clamped = (value ?? 0.01).clamp(0.01, 99);
+              final String formatted = clamped.toString();
               if (formatted != _oddsText.text) {
                 _oddsText.value = TextEditingValue(
                   text: formatted,
                   selection: TextSelection.collapsed(offset: formatted.length),
                 );
               }
+              setState(() => _sliderValue = clamped);
+              context.read<OddsCalculatorBloc>().add(
+                OddsCalculatorEvent.chanceChanged(clamped),
+              );
             },
             child: TextField(
               style: context.textTheme.displaySmall,
@@ -159,9 +163,12 @@ class _OddsInputState extends State<_OddsInput> {
                 fillColor: context.colorScheme.surface,
               ),
               onChanged: (newValue) {
+                final double chance = (double.tryParse(newValue) ?? 0).clamp(
+                  0.01,
+                  99,
+                );
+                setState(() => _sliderValue = chance);
                 _debounce(() {
-                  double chance = double.tryParse(newValue) ?? 0;
-                  chance = chance.clamp(0.01, 99);
                   context.read<OddsCalculatorBloc>().add(
                     OddsCalculatorEvent.chanceChanged(chance),
                   );

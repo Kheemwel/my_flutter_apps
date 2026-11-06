@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_flutter_apps/core/extensions/theme_x.dart';
 import 'package:my_flutter_apps/core/router/routes.dart';
+import 'package:my_flutter_apps/core/theme/accent_family.dart';
 import 'package:my_flutter_apps/core/utils/debouncer.dart';
 import 'package:my_flutter_apps/features/odds_calculator/bloc/odds_calculator_bloc.dart';
 import 'package:my_flutter_apps/features/odds_calculator/bloc/odds_calculator_event.dart';
@@ -67,25 +68,25 @@ class _OddsCalculatorView extends StatelessWidget {
                         attempts: state.attempts(30),
                         targetChance: 30,
                         description: 'Low likelihood',
-                        color: Colors.red,
+                        accentFamily: context.accentFamilies.red,
                       ),
                       _AttemptsDisplay(
                         attempts: state.attempts(50),
                         targetChance: 50,
                         description: 'Median coinflip probability',
-                        color: Colors.yellow,
+                        accentFamily: context.accentFamilies.yellow,
                       ),
                       _AttemptsDisplay(
                         attempts: state.attempts(90),
                         targetChance: 90,
                         description: 'High confidence rate',
-                        color: Colors.blue,
+                        accentFamily: context.accentFamilies.blue,
                       ),
                       _AttemptsDisplay(
                         attempts: state.attempts(99),
                         targetChance: 99,
                         description: 'Near certainty',
-                        color: Colors.green,
+                        accentFamily: context.accentFamilies.green,
                       ),
                     ],
                   ),
@@ -221,13 +222,13 @@ class _AttemptsDisplay extends StatelessWidget {
   final int attempts;
   final int targetChance;
   final String description;
-  final Color color;
+  final AccentFamily accentFamily;
 
   const _AttemptsDisplay({
     required this.attempts,
     required this.targetChance,
     required this.description,
-    required this.color,
+    required this.accentFamily,
   });
 
   @override
@@ -246,10 +247,10 @@ class _AttemptsDisplay extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: color.withAlpha(50),
+              color: accentFamily.primaryContainer,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(Icons.percent, color: color),
+            child: Icon(Icons.percent, color: accentFamily.onPrimaryContainer),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,7 +279,9 @@ class _AttemptsDisplay extends StatelessWidget {
             children: [
               Text(
                 attempts.toString(),
-                style: context.textTheme.displaySmall?.copyWith(color: color),
+                style: context.textTheme.displaySmall?.copyWith(
+                  color: accentFamily.primary,
+                ),
               ),
               Text(
                 'attempt${attempts > 1 ? 's' : ''}',

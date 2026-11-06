@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:my_flutter_apps/core/router/routes.dart';
+import 'package:my_flutter_apps/core/theme/accent_families.dart';
 
 void main() {
   runApp(const MainApp());
@@ -10,17 +11,20 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const brightness = Brightness.dark;
+
     return MaterialApp.router(
-      title: 'Kheemwel\'s Flutter Apps',
+      title: "Kheemwel's Flutter Apps",
       debugShowCheckedModeBanner: false,
       routerConfig: router,
       theme: ThemeData(
-        brightness: Brightness.dark,
+        brightness: brightness,
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.lightBlue,
-          brightness: Brightness.dark,
+          brightness: brightness,
         ),
         useMaterial3: true,
+        extensions: [AccentFamilies.forBrightness(brightness)],
       ),
     );
   }

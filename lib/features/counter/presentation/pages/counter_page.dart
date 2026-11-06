@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:my_flutter_apps/core/extensions/theme_x.dart';
 import 'package:my_flutter_apps/core/router/routes.dart';
 import 'package:my_flutter_apps/features/counter/bloc/counter_bloc.dart';
 import 'package:my_flutter_apps/features/counter/bloc/counter_event.dart';
@@ -28,68 +29,75 @@ class _CounterView extends StatelessWidget {
         title: Text('Counter'),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(12.0),
+        padding: const EdgeInsets.all(12),
         child: Center(
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: 500, maxHeight: 400),
+            constraints: BoxConstraints(maxWidth: 500, maxHeight: 500),
             child: Card(
               elevation: 4,
               child: Padding(
-                padding: const EdgeInsetsGeometry.fromLTRB(12, 12, 12, 24),
+                padding: const EdgeInsetsGeometry.fromLTRB(16, 16, 16, 24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
+                  spacing: 24,
                   children: [
                     Text(
                       'Counter Demo',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: context.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      spacing: 12,
-                      children: [
-                        BlocBuilder<CounterBloc, CounterState>(
-                          builder: (context, state) {
-                            return Expanded(
-                              child: _CountTile(
-                                label: 'Count',
-                                value: state.value,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            );
-                          },
-                        ),
-                        BlocBuilder<CounterBloc, CounterState>(
-                          builder: (context, state) {
-                            return Expanded(
-                              child: _CountTile(
-                                label: 'Doubled',
-                                value: state.doubled,
-                                color: Theme.of(context).colorScheme.secondary,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        spacing: 12,
+                        children: [
+                          BlocBuilder<CounterBloc, CounterState>(
+                            builder: (context, state) {
+                              return Expanded(
+                                child: _CountTile(
+                                  label: 'Count',
+                                  value: state.value,
+                                  color: context.colorScheme.primary,
+                                ),
+                              );
+                            },
+                          ),
+                          BlocBuilder<CounterBloc, CounterState>(
+                            builder: (context, state) {
+                              return Expanded(
+                                child: _CountTile(
+                                  label: 'Doubled',
+                                  value: state.doubled,
+                                  color: context.colorScheme.tertiary,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       spacing: 24,
                       children: [
-                        IconButton.outlined(
+                        FilledButton.icon(
+                          label: Text('Decrement'),
                           onPressed: () => context.read<CounterBloc>().add(
                             CounterEvent.decrementPressed(),
                           ),
                           icon: Icon(Icons.remove),
                         ),
-                        IconButton.filledTonal(
+                        FilledButton.tonalIcon(
+                          label: Text('Reset'),
                           onPressed: () => context.read<CounterBloc>().add(
                             CounterEvent.resetPressed(),
                           ),
                           icon: Icon(Icons.refresh),
                         ),
-                        IconButton.filled(
+                        FilledButton.icon(
+                          label: Text('Increment'),
                           onPressed: () => context.read<CounterBloc>().add(
                             CounterEvent.incrementPressed(),
                           ),
@@ -128,6 +136,8 @@ class _CountTile extends StatelessWidget {
         border: Border.all(color: color, width: 2),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             label,

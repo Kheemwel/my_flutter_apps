@@ -22,6 +22,12 @@ class HomePage extends StatelessWidget {
             },
             child: Text('Go to odds calculator'),
           ),
+          FilledButton(
+            onPressed: () {
+              AmountSplitterRoute().go(context);
+            },
+            child: Text('Go to amount splitter'),
+          ),
         ],
       ),
     );

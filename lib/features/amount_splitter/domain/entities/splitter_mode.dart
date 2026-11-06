@@ -1,0 +1,1 @@
+enum SplitterMode { manual, auto }

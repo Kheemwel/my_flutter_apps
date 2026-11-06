@@ -10,6 +10,7 @@ List<RouteBase> get $appRoutes => [
   $homeRoute,
   $counterRoute,
   $oddsCalculatorRoute,
+  $amountSplitterRoute,
 ];
 
 RouteBase get $homeRoute => GoRouteData.$route(
@@ -76,6 +77,33 @@ mixin $OddsCalculatorRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/odds-calculator');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) =>
+      context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+RouteBase get $amountSplitterRoute => GoRouteData.$route(
+  path: '/amount-splitter',
+  hasOverriddenOnExit: false,
+  factory: $AmountSplitterRoute._fromState,
+);
+
+mixin $AmountSplitterRoute on GoRouteData {
+  static AmountSplitterRoute _fromState(GoRouterState state) =>
+      const AmountSplitterRoute();
+
+  @override
+  String get location => GoRouteData.$location('/amount-splitter');
 
   @override
   void go(BuildContext context) => context.go(location);

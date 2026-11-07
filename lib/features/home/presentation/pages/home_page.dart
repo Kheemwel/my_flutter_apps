@@ -85,22 +85,36 @@ class _HomeViewState extends State<_HomeView> {
                         child: _EmptyState(),
                       )
                     else
-                      SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                        sliver: SliverGrid(
-                          gridDelegate:
-                              const SliverGridDelegateWithMaxCrossAxisExtent(
-                                maxCrossAxisExtent: 320,
-                                mainAxisSpacing: 12,
-                                crossAxisSpacing: 12,
-                                childAspectRatio: 0.95,
+                      SliverLayoutBuilder(
+                        builder: (context, constraints) {
+                          const int singleColumnBreakpoint = 450;
+                          final width = constraints.crossAxisExtent;
+                          // 1 column below ~450px (Mobile L = 425px included)
+                          final delegate = width < singleColumnBreakpoint
+                              ? const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 1,
+                                  mainAxisExtent:
+                                      220, // fixed height for single column
+                                  mainAxisSpacing: 12,
+                                )
+                              : const SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 320,
+                                  mainAxisSpacing: 12,
+                                  crossAxisSpacing: 12,
+                                  mainAxisExtent: 220,
+                                );
+                          return SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                            sliver: SliverGrid(
+                              gridDelegate: delegate,
+                              delegate: SliverChildBuilderDelegate(
+                                (context, index) =>
+                                    _AppCard(entry: visible[index]),
+                                childCount: visible.length,
                               ),
-                          delegate: SliverChildBuilderDelegate(
-                            (BuildContext context, int index) =>
-                                _AppCard(entry: visible[index]),
-                            childCount: visible.length,
-                          ),
-                        ),
+                            ),
+                          );
+                        },
                       ),
                   ],
                 );
@@ -207,7 +221,6 @@ class _EmptyState extends StatelessWidget {
 
 class _AppCard extends StatelessWidget {
   const _AppCard({required this.entry});
-
   final AppEntry entry;
 
   @override
@@ -232,17 +245,15 @@ class _AppCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
-              Expanded(
-                child: Text(
-                  entry.description,
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
+              Text(
+                entry.description,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 8),
+              const Spacer(),
               Wrap(
                 spacing: 6,
                 runSpacing: 6,

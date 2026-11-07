@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_flutter_apps/core/extensions/theme_x.dart';
-import 'package:my_flutter_apps/core/router/routes.dart';
 import 'package:my_flutter_apps/core/theme/accent_family.dart';
 import 'package:my_flutter_apps/core/utils/debouncer.dart';
 import 'package:my_flutter_apps/features/odds_calculator/presentation/bloc/odds_calculator_bloc.dart';
@@ -27,13 +26,7 @@ class _OddsCalculatorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: () => HomeRoute().go(context),
-          icon: Icon(Icons.arrow_back),
-        ),
-        title: Text('Odds Finder'),
-      ),
+      appBar: AppBar(title: Text('Odds Finder')),
       body: SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(12, 24, 12, 24),
         child: Center(

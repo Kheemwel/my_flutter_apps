@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_flutter_apps/core/extensions/theme_x.dart';
-import 'package:my_flutter_apps/core/router/routes.dart';
 import 'package:my_flutter_apps/features/amount_splitter/domain/entities/split_part.dart';
 import 'package:my_flutter_apps/features/amount_splitter/domain/entities/splitter_mode.dart';
 import 'package:my_flutter_apps/features/amount_splitter/presentation/bloc/amount_splitter_bloc.dart';
@@ -27,13 +26,7 @@ class _AmountSplitterView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => HomeRoute().go(context),
-        ),
-        title: Text('Amount Splitter'),
-      ),
+      appBar: AppBar(title: Text('Amount Splitter')),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(

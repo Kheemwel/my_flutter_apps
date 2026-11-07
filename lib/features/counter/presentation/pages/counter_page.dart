@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_flutter_apps/core/extensions/theme_x.dart';
-import 'package:my_flutter_apps/core/router/routes.dart';
 import 'package:my_flutter_apps/features/counter/bloc/counter_bloc.dart';
 import 'package:my_flutter_apps/features/counter/bloc/counter_event.dart';
 import 'package:my_flutter_apps/features/counter/bloc/counter_state.dart';
@@ -22,13 +20,7 @@ class _CounterView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => HomeRoute().go(context),
-        ),
-        title: Text('Counter'),
-      ),
+      appBar: AppBar(title: Text('Counter')),
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: Center(

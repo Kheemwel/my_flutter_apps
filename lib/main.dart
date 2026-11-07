@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:my_flutter_apps/core/router/routes.dart';
 import 'package:my_flutter_apps/core/theme/accent_families.dart';
 
 void main() {
+  GoRouter.optionURLReflectsImperativeAPIs = true;
   runApp(const MainApp());
 }
 

@@ -15,7 +15,7 @@ List<AppEntry> buildAppCatalog(BuildContext context) {
       icon: Icons.add_circle_outline,
       tags: const <String>['Demo', 'State'],
       accent: accents.blue,
-      route: (BuildContext c) => const CounterRoute().go(c),
+      route: (BuildContext context) => const CounterRoute().push(context),
     ),
     AppEntry(
       title: 'Odds Calculator',
@@ -23,7 +23,8 @@ List<AppEntry> buildAppCatalog(BuildContext context) {
       icon: Icons.percent,
       tags: const <String>['Math', 'Probability'],
       accent: accents.green,
-      route: (BuildContext c) => const OddsCalculatorRoute().go(c),
+      route: (BuildContext context) =>
+          const OddsCalculatorRoute().push(context),
     ),
     AppEntry(
       title: 'Amount Splitter',
@@ -31,7 +32,8 @@ List<AppEntry> buildAppCatalog(BuildContext context) {
       icon: Icons.call_split,
       tags: const <String>['Math', 'Money', 'Utility'],
       accent: accents.purple,
-      route: (BuildContext c) => const AmountSplitterRoute().go(c),
+      route: (BuildContext context) =>
+          const AmountSplitterRoute().push(context),
     ),
   ];
 }

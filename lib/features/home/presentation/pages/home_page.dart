@@ -1,39 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_flutter_apps/core/extensions/theme_x.dart';
 import 'package:my_flutter_apps/core/theme/accent_family.dart';
-import 'package:my_flutter_apps/features/home/presentation/cubit/home_cubit.dart';
-import 'package:my_flutter_apps/features/home/presentation/cubit/home_state.dart';
 import 'package:my_flutter_apps/features/home/presentation/models/app_catalog.dart';
 import 'package:my_flutter_apps/features/home/presentation/models/app_entry.dart';
+import 'package:my_flutter_apps/features/home/presentation/notifier/home_notifier.dart';
+import 'package:my_flutter_apps/features/home/presentation/state/home_state.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider<HomeCubit>(
-      create: (_) => HomeCubit(),
-      child: const _HomeView(),
-    );
-  }
+  Widget build(BuildContext context) => const _HomeView();
 }
 
-class _HomeView extends StatefulWidget {
+class _HomeView extends StatelessWidget {
   const _HomeView();
-
-  @override
-  State<_HomeView> createState() => _HomeViewState();
-}
-
-class _HomeViewState extends State<_HomeView> {
-  final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,77 +30,23 @@ class _HomeViewState extends State<_HomeView> {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1100),
-            child: BlocBuilder<HomeCubit, HomeState>(
-              builder: (BuildContext context, HomeState state) {
-                final List<AppEntry> visible = state.filter(catalog);
-
-                return CustomScrollView(
-                  slivers: <Widget>[
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: _SearchBar(
-                          controller: _searchController,
-                          onChanged: context.read<HomeCubit>().queryChanged,
-                          onClear: () {
-                            _searchController.clear();
-                            context.read<HomeCubit>().cleared();
-                          },
-                          showClear: state.hasActiveFilters,
-                        ),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _FilterChips(
-                          tags: state.collectTags(catalog),
-                          selected: state.selectedTags,
-                          onToggle: context.read<HomeCubit>().tagToggled,
-                        ),
-                      ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    if (visible.isEmpty)
-                      const SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: _EmptyState(),
-                      )
-                    else
-                      SliverLayoutBuilder(
-                        builder: (context, constraints) {
-                          const int singleColumnBreakpoint = 450;
-                          final width = constraints.crossAxisExtent;
-                          // 1 column below ~450px (Mobile L = 425px included)
-                          final delegate = width < singleColumnBreakpoint
-                              ? const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 1,
-                                  mainAxisExtent:
-                                      220, // fixed height for single column
-                                  mainAxisSpacing: 12,
-                                )
-                              : const SliverGridDelegateWithMaxCrossAxisExtent(
-                                  maxCrossAxisExtent: 320,
-                                  mainAxisSpacing: 12,
-                                  crossAxisSpacing: 12,
-                                  mainAxisExtent: 220,
-                                );
-                          return SliverPadding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                            sliver: SliverGrid(
-                              gridDelegate: delegate,
-                              delegate: SliverChildBuilderDelegate(
-                                (context, index) =>
-                                    _AppCard(entry: visible[index]),
-                                childCount: visible.length,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                  ],
-                );
-              },
+            child: CustomScrollView(
+              slivers: <Widget>[
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: _SearchBar(),
+                  ),
+                ),
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: _FilterChipsRow(),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                _ResultsGrid(catalog: catalog),
+              ],
             ),
           ),
         ),
@@ -127,24 +55,80 @@ class _HomeViewState extends State<_HomeView> {
   }
 }
 
-class _SearchBar extends StatelessWidget {
-  const _SearchBar({
-    required this.controller,
-    required this.onChanged,
-    required this.onClear,
-    required this.showClear,
-  });
+class _ResultsGrid extends ConsumerWidget {
+  const _ResultsGrid({required this.catalog});
 
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onClear;
-  final bool showClear;
+  final List<AppEntry> catalog;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch the pieces that determine the filtered list.
+    final HomeState state = ref.watch(homeProvider);
+    final List<AppEntry> visible = state.filter(catalog);
+
+    if (visible.isEmpty) {
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: _EmptyState(),
+      );
+    }
+
+    return SliverLayoutBuilder(
+      builder: (context, constraints) {
+        const int singleColumnBreakpoint = 450;
+        final width = constraints.crossAxisExtent;
+        final delegate = width < singleColumnBreakpoint
+            ? const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 1,
+                mainAxisExtent: 220,
+                mainAxisSpacing: 12,
+              )
+            : const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 320,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                mainAxisExtent: 220,
+              );
+        return SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          sliver: SliverGrid(
+            gridDelegate: delegate,
+            delegate: SliverChildBuilderDelegate(
+              (context, index) => _AppCard(entry: visible[index]),
+              childCount: visible.length,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SearchBar extends ConsumerStatefulWidget {
+  const _SearchBar();
+
+  @override
+  ConsumerState<_SearchBar> createState() => _SearchBarState();
+}
+
+class _SearchBarState extends ConsumerState<_SearchBar> {
+  final TextEditingController _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final bool showClear = ref.watch(
+      homeProvider.select((s) => s.hasActiveFilters),
+    );
+
     return TextField(
-      controller: controller,
-      onChanged: onChanged,
+      controller: _controller,
+      onChanged: ref.read(homeProvider.notifier).queryChanged,
       decoration: InputDecoration(
         hintText: 'Search apps…',
         prefixIcon: const Icon(Icons.search),
@@ -152,7 +136,10 @@ class _SearchBar extends StatelessWidget {
             ? IconButton(
                 tooltip: 'Clear',
                 icon: const Icon(Icons.close),
-                onPressed: onClear,
+                onPressed: () {
+                  _controller.clear();
+                  ref.read(homeProvider.notifier).cleared();
+                },
               )
             : null,
         filled: true,
@@ -165,28 +152,30 @@ class _SearchBar extends StatelessWidget {
   }
 }
 
-class _FilterChips extends StatelessWidget {
-  const _FilterChips({
-    required this.tags,
-    required this.selected,
-    required this.onToggle,
-  });
-
-  final Set<String> tags;
-  final Set<String> selected;
-  final ValueChanged<String> onToggle;
+class _FilterChipsRow extends ConsumerWidget {
+  const _FilterChipsRow();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final List<AppEntry> catalog = buildAppCatalog(context);
+
+    // Scope: rebuild only when the selected set changes.
+    // The available tags are derived from the (static) catalog.
+    final Set<String> selected = ref.watch(
+      homeProvider.select((s) => s.selectedTags),
+    );
+    final Set<String> allTags = const HomeState().collectTags(catalog);
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: tags
+      children: allTags
           .map(
             (String tag) => FilterChip(
               label: Text(tag),
               selected: selected.contains(tag),
-              onSelected: (_) => onToggle(tag),
+              onSelected: (_) =>
+                  ref.read(homeProvider.notifier).tagToggled(tag),
             ),
           )
           .toList(growable: false),

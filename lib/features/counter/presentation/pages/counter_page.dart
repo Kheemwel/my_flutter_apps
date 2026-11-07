@@ -1,35 +1,31 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_flutter_apps/core/extensions/theme_x.dart';
-import 'package:my_flutter_apps/features/counter/bloc/counter_bloc.dart';
-import 'package:my_flutter_apps/features/counter/bloc/counter_event.dart';
-import 'package:my_flutter_apps/features/counter/bloc/counter_state.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_flutter_apps/features/counter/presentation/notifier/counter_notifier.dart';
 
 class CounterPage extends StatelessWidget {
-  const new({super.key});
+  const CounterPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(create: (_) => CounterBloc(), child: _CounterView());
-  }
+  Widget build(BuildContext context) => const _CounterView();
 }
 
-class _CounterView extends StatelessWidget {
+class _CounterView extends ConsumerWidget {
   const _CounterView();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: Text('Counter')),
+      appBar: AppBar(title: const Text('Counter')),
       body: Padding(
         padding: const EdgeInsets.all(12),
         child: Center(
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: 500, maxHeight: 500),
+            constraints: const BoxConstraints(maxWidth: 500, maxHeight: 500),
             child: Card(
               elevation: 4,
               child: Padding(
-                padding: const EdgeInsetsGeometry.fromLTRB(16, 16, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -46,32 +42,28 @@ class _CounterView extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         spacing: 12,
                         children: [
-                          BlocBuilder<CounterBloc, CounterState>(
-                            builder: (context, state) {
-                              return Expanded(
-                                child: _CountTile(
-                                  label: 'Count',
-                                  value: state.value,
-                                  color: context.colorScheme.primary,
-                                ),
-                              );
-                            },
+                          Expanded(
+                            child: _CountTile(
+                              label: 'Count',
+                              value: ref.watch(
+                                counterProvider.select((s) => s.value),
+                              ),
+                              color: context.colorScheme.primary,
+                            ),
                           ),
-                          BlocBuilder<CounterBloc, CounterState>(
-                            builder: (context, state) {
-                              return Expanded(
-                                child: _CountTile(
-                                  label: 'Doubled',
-                                  value: state.doubled,
-                                  color: context.colorScheme.tertiary,
-                                ),
-                              );
-                            },
+                          Expanded(
+                            child: _CountTile(
+                              label: 'Doubled',
+                              value: ref.watch(
+                                counterProvider.select((s) => s.doubled),
+                              ),
+                              color: context.colorScheme.tertiary,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    _CounterButtons(),
+                    const _CounterButtons(),
                   ],
                 ),
               ),
@@ -83,55 +75,51 @@ class _CounterView extends StatelessWidget {
   }
 }
 
-class _CounterButtons extends StatelessWidget {
+class _CounterButtons extends ConsumerWidget {
   const _CounterButtons();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(counterProvider.notifier);
+
     return LayoutBuilder(
       builder: (context, constraints) {
+        final buttons = <Widget>[
+          _decrementButton(notifier),
+          _resetButton(notifier),
+          _incrementButton(notifier),
+        ];
         if (constraints.maxWidth < 380) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: 12,
-            children: [
-              _decrementButton(context),
-              _resetButton(context),
-              _incrementButton(context),
-            ],
+            children: buttons,
           );
         }
         return Row(
           mainAxisAlignment: MainAxisAlignment.center,
           spacing: 24,
-          children: [
-            _decrementButton(context),
-            _resetButton(context),
-            _incrementButton(context),
-          ],
+          children: buttons,
         );
       },
     );
   }
 
-  Widget _decrementButton(BuildContext context) => FilledButton.icon(
+  Widget _decrementButton(CounterNotifier notifier) => FilledButton.icon(
     label: const Text('Decrement'),
-    onPressed: () =>
-        context.read<CounterBloc>().add(CounterEvent.decrementPressed()),
+    onPressed: notifier.decrement,
     icon: const Icon(Icons.remove),
   );
 
-  Widget _resetButton(BuildContext context) => FilledButton.tonalIcon(
+  Widget _resetButton(CounterNotifier notifier) => FilledButton.tonalIcon(
     label: const Text('Reset'),
-    onPressed: () =>
-        context.read<CounterBloc>().add(CounterEvent.resetPressed()),
+    onPressed: notifier.reset,
     icon: const Icon(Icons.refresh),
   );
 
-  Widget _incrementButton(BuildContext context) => FilledButton.icon(
+  Widget _incrementButton(CounterNotifier notifier) => FilledButton.icon(
     label: const Text('Increment'),
-    onPressed: () =>
-        context.read<CounterBloc>().add(CounterEvent.incrementPressed()),
+    onPressed: notifier.increment,
     icon: const Icon(Icons.add),
   );
 }

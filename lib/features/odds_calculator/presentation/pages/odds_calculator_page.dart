@@ -5,9 +5,9 @@ import 'package:my_flutter_apps/core/extensions/theme_x.dart';
 import 'package:my_flutter_apps/core/router/routes.dart';
 import 'package:my_flutter_apps/core/theme/accent_family.dart';
 import 'package:my_flutter_apps/core/utils/debouncer.dart';
-import 'package:my_flutter_apps/features/odds_calculator/bloc/odds_calculator_bloc.dart';
-import 'package:my_flutter_apps/features/odds_calculator/bloc/odds_calculator_event.dart';
-import 'package:my_flutter_apps/features/odds_calculator/bloc/odds_calculator_state.dart';
+import 'package:my_flutter_apps/features/odds_calculator/presentation/bloc/odds_calculator_bloc.dart';
+import 'package:my_flutter_apps/features/odds_calculator/presentation/bloc/odds_calculator_event.dart';
+import 'package:my_flutter_apps/features/odds_calculator/presentation/bloc/odds_calculator_state.dart';
 
 class OddsCalculatorPage extends StatelessWidget {
   const OddsCalculatorPage({super.key});

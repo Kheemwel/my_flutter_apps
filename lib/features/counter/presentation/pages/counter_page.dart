@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:my_flutter_apps/core/extensions/theme_x.dart';
 import 'package:my_flutter_apps/core/router/routes.dart';
@@ -78,33 +79,7 @@ class _CounterView extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      spacing: 24,
-                      children: [
-                        FilledButton.icon(
-                          label: Text('Decrement'),
-                          onPressed: () => context.read<CounterBloc>().add(
-                            CounterEvent.decrementPressed(),
-                          ),
-                          icon: Icon(Icons.remove),
-                        ),
-                        FilledButton.tonalIcon(
-                          label: Text('Reset'),
-                          onPressed: () => context.read<CounterBloc>().add(
-                            CounterEvent.resetPressed(),
-                          ),
-                          icon: Icon(Icons.refresh),
-                        ),
-                        FilledButton.icon(
-                          label: Text('Increment'),
-                          onPressed: () => context.read<CounterBloc>().add(
-                            CounterEvent.incrementPressed(),
-                          ),
-                          icon: Icon(Icons.add),
-                        ),
-                      ],
-                    ),
+                    _CounterButtons(),
                   ],
                 ),
               ),
@@ -114,6 +89,59 @@ class _CounterView extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CounterButtons extends StatelessWidget {
+  const _CounterButtons();
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 380) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 12,
+            children: [
+              _decrementButton(context),
+              _resetButton(context),
+              _incrementButton(context),
+            ],
+          );
+        }
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 24,
+          children: [
+            _decrementButton(context),
+            _resetButton(context),
+            _incrementButton(context),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _decrementButton(BuildContext context) => FilledButton.icon(
+    label: const Text('Decrement'),
+    onPressed: () =>
+        context.read<CounterBloc>().add(CounterEvent.decrementPressed()),
+    icon: const Icon(Icons.remove),
+  );
+
+  Widget _resetButton(BuildContext context) => FilledButton.tonalIcon(
+    label: const Text('Reset'),
+    onPressed: () =>
+        context.read<CounterBloc>().add(CounterEvent.resetPressed()),
+    icon: const Icon(Icons.refresh),
+  );
+
+  Widget _incrementButton(BuildContext context) => FilledButton.icon(
+    label: const Text('Increment'),
+    onPressed: () =>
+        context.read<CounterBloc>().add(CounterEvent.incrementPressed()),
+    icon: const Icon(Icons.add),
+  );
 }
 
 class _CountTile extends StatelessWidget {

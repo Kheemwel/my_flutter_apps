@@ -1,45 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_flutter_apps/core/extensions/theme_x.dart';
 import 'package:my_flutter_apps/core/theme/accent_family.dart';
 import 'package:my_flutter_apps/core/utils/debouncer.dart';
-import 'package:my_flutter_apps/features/odds_calculator/presentation/bloc/odds_calculator_bloc.dart';
-import 'package:my_flutter_apps/features/odds_calculator/presentation/bloc/odds_calculator_event.dart';
-import 'package:my_flutter_apps/features/odds_calculator/presentation/bloc/odds_calculator_state.dart';
+import 'package:my_flutter_apps/features/odds_calculator/presentation/notifier/odds_calculator_notifier.dart';
+import 'package:my_flutter_apps/features/odds_calculator/presentation/states/odds_calculator_state.dart';
 
 class OddsCalculatorPage extends StatelessWidget {
   const OddsCalculatorPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => OddsCalculatorBloc(),
-      child: _OddsCalculatorView(),
-    );
-  }
+  Widget build(BuildContext context) => const _OddsCalculatorView();
 }
 
-class _OddsCalculatorView extends StatelessWidget {
+class _OddsCalculatorView extends ConsumerWidget {
   const _OddsCalculatorView();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: Text('Odds Finder')),
+      appBar: AppBar(title: const Text('Odds Calculator')),
       body: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(12, 24, 12, 24),
+        padding: const EdgeInsets.fromLTRB(12, 24, 12, 24),
         child: Center(
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: 750),
+            constraints: const BoxConstraints(maxWidth: 750),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _OddsInput(),
-                SizedBox(height: 24),
+                const _OddsInput(),
+                const SizedBox(height: 24),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   spacing: 8,
                   children: [
@@ -53,40 +45,8 @@ class _OddsCalculatorView extends StatelessWidget {
                     ),
                   ],
                 ),
-                SizedBox(height: 8),
-                BlocBuilder<OddsCalculatorBloc, OddsCalculatorState>(
-                  builder: (context, state) => Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    spacing: 12,
-                    children: [
-                      _AttemptsDisplay(
-                        attempts: state.attempts(30),
-                        targetChance: 30,
-                        description: 'Low likelihood',
-                        accentFamily: context.accentFamilies.red,
-                      ),
-                      _AttemptsDisplay(
-                        attempts: state.attempts(50),
-                        targetChance: 50,
-                        description: 'Median coinflip probability',
-                        accentFamily: context.accentFamilies.yellow,
-                      ),
-                      _AttemptsDisplay(
-                        attempts: state.attempts(90),
-                        targetChance: 90,
-                        description: 'High confidence rate',
-                        accentFamily: context.accentFamilies.blue,
-                      ),
-                      _AttemptsDisplay(
-                        attempts: state.attempts(99),
-                        targetChance: 99,
-                        description: 'Near certainty',
-                        accentFamily: context.accentFamilies.green,
-                      ),
-                    ],
-                  ),
-                ),
+                const SizedBox(height: 8),
+                _AttemptsSection(),
               ],
             ),
           ),
@@ -96,14 +56,54 @@ class _OddsCalculatorView extends StatelessWidget {
   }
 }
 
-class _OddsInput extends StatefulWidget {
+class _AttemptsSection extends ConsumerWidget {
+  const _AttemptsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final OddsCalculatorState state = ref.watch(oddsCalculatorProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 12,
+      children: [
+        _AttemptsDisplay(
+          attempts: state.attempts(30),
+          targetChance: 30,
+          description: 'Low likelihood',
+          accentFamily: context.accentFamilies.red,
+        ),
+        _AttemptsDisplay(
+          attempts: state.attempts(50),
+          targetChance: 50,
+          description: 'Median coinflip probability',
+          accentFamily: context.accentFamilies.yellow,
+        ),
+        _AttemptsDisplay(
+          attempts: state.attempts(90),
+          targetChance: 90,
+          description: 'High confidence rate',
+          accentFamily: context.accentFamilies.blue,
+        ),
+        _AttemptsDisplay(
+          attempts: state.attempts(99),
+          targetChance: 99,
+          description: 'Near certainty',
+          accentFamily: context.accentFamilies.green,
+        ),
+      ],
+    );
+  }
+}
+
+class _OddsInput extends ConsumerStatefulWidget {
   const _OddsInput();
 
   @override
-  State<_OddsInput> createState() => _OddsInputState();
+  ConsumerState<_OddsInput> createState() => _OddsInputState();
 }
 
-class _OddsInputState extends State<_OddsInput> {
+class _OddsInputState extends ConsumerState<_OddsInput> {
   final TextEditingController _oddsText = TextEditingController(text: '50');
   final Debouncer _debounce = Debouncer();
   double _sliderValue = 50;
@@ -111,19 +111,23 @@ class _OddsInputState extends State<_OddsInput> {
   @override
   void dispose() {
     _debounce.dispose();
+    _oddsText.dispose();
     super.dispose();
+  }
+
+  void _pushChance(double chance) {
+    ref.read(oddsCalculatorProvider.notifier).chanceChanged(chance);
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.fromLTRB(24, 32, 24, 24),
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: context.colorScheme.surfaceContainer,
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 8,
         children: [
@@ -140,9 +144,7 @@ class _OddsInputState extends State<_OddsInput> {
                 );
               }
               setState(() => _sliderValue = clamped);
-              context.read<OddsCalculatorBloc>().add(
-                OddsCalculatorEvent.chanceChanged(clamped),
-              );
+              _pushChance(clamped);
             },
             child: TextField(
               style: context.textTheme.displaySmall,
@@ -165,16 +167,11 @@ class _OddsInputState extends State<_OddsInput> {
                   99,
                 );
                 setState(() => _sliderValue = chance);
-                _debounce(() {
-                  context.read<OddsCalculatorBloc>().add(
-                    OddsCalculatorEvent.chanceChanged(chance),
-                  );
-                });
+                _debounce(() => _pushChance(chance));
               },
             ),
           ),
           Column(
-            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Slider(
@@ -189,17 +186,12 @@ class _OddsInputState extends State<_OddsInput> {
                   );
                   setState(() => _sliderValue = newValue);
                 },
-                onChangeEnd: (newValue) {
-                  context.read<OddsCalculatorBloc>().add(
-                    OddsCalculatorEvent.chanceChanged(newValue),
-                  );
-                },
+                onChangeEnd: _pushChance,
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text('0.01%', style: context.textTheme.labelSmall),
                     Text('99%', style: context.textTheme.labelSmall),

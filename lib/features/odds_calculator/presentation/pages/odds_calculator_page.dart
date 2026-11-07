@@ -51,9 +51,12 @@ class _OddsCalculatorView extends StatelessWidget {
                   spacing: 8,
                   children: [
                     Icon(Icons.insights, color: context.colorScheme.primary),
-                    Text(
-                      'Approximate attempts needed for success',
-                      style: context.textTheme.titleMedium,
+                    Expanded(
+                      child: Text(
+                        'Approximate attempts needed for success',
+                        style: context.textTheme.titleMedium,
+                        softWrap: true,
+                      ),
                     ),
                   ],
                 ),
@@ -234,48 +237,59 @@ class _AttemptsDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: context.colorScheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        spacing: 12,
-        children: [
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: accentFamily.primaryContainer,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(Icons.percent, color: accentFamily.onPrimaryContainer),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            spacing: 4,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Narrow: stack number below the description
+          final bool isNarrow = constraints.maxWidth < 360;
+
+          final content = Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                '$targetChance% Chance',
-                style: context.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: accentFamily.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.percent,
+                  color: accentFamily.onPrimaryContainer,
                 ),
               ),
-              Text(
-                description,
-                style: context.textTheme.labelSmall?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$targetChance% Chance',
+                      style: context.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: context.textTheme.labelSmall?.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-          ),
-          Spacer(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            spacing: 8,
+          );
+
+          final attemptsLabel = Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
                 attempts.toString(),
@@ -283,13 +297,36 @@ class _AttemptsDisplay extends StatelessWidget {
                   color: accentFamily.primary,
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 'attempt${attempts > 1 ? 's' : ''}',
                 style: context.textTheme.labelLarge,
               ),
             ],
-          ),
-        ],
+          );
+
+          if (isNarrow) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                content,
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(fit: BoxFit.scaleDown, child: attemptsLabel),
+                ),
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: content),
+              const SizedBox(width: 12),
+              FittedBox(fit: BoxFit.scaleDown, child: attemptsLabel),
+            ],
+          );
+        },
       ),
     );
   }

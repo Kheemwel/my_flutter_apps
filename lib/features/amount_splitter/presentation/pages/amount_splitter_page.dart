@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_flutter_apps/core/extensions/theme_x.dart';
 import 'package:my_flutter_apps/features/amount_splitter/domain/entities/split_part.dart';
 import 'package:my_flutter_apps/features/amount_splitter/domain/entities/splitter_mode.dart';
-import 'package:my_flutter_apps/features/amount_splitter/presentation/bloc/amount_splitter_bloc.dart';
-import 'package:my_flutter_apps/features/amount_splitter/presentation/bloc/amount_splitter_event.dart';
-import 'package:my_flutter_apps/features/amount_splitter/presentation/bloc/amount_splitter_state.dart';
+import 'package:my_flutter_apps/features/amount_splitter/presentation/notifier/amount_splitter_notifier.dart';
+import 'package:my_flutter_apps/features/amount_splitter/presentation/state/amount_splitter_state.dart';
 import 'package:my_flutter_apps/features/amount_splitter/services/splitter.dart';
 
 class AmountSplitterPage extends StatelessWidget {
@@ -13,10 +12,7 @@ class AmountSplitterPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<AmountSplitterBloc>(
-      create: (BuildContext context) => AmountSplitterBloc(),
-      child: const _AmountSplitterView(),
-    );
+    return const _AmountSplitterView();
   }
 }
 
@@ -26,7 +22,7 @@ class _AmountSplitterView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Amount Splitter')),
+      appBar: AppBar(title: const Text('Amount Splitter')),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -35,17 +31,16 @@ class _AmountSplitterView extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  const _ModeToggle(),
-                  const SizedBox(height: 16),
-                  const _InputSection(),
-                  const SizedBox(height: 16),
-                  const _StatsRow(),
-                  const SizedBox(height: 16),
-                  const _PartsHeader(),
-                  const SizedBox(height: 8),
-                  // Only the parts list scrolls.
-                  const Expanded(child: _PartsList()),
+                children: const <Widget>[
+                  _ModeToggleSection(),
+                  SizedBox(height: 16),
+                  _InputSection(),
+                  SizedBox(height: 16),
+                  _StatsSection(),
+                  SizedBox(height: 16),
+                  _PartsHeaderSection(),
+                  SizedBox(height: 8),
+                  Expanded(child: _PartsListSection()),
                 ],
               ),
             ),
@@ -56,47 +51,42 @@ class _AmountSplitterView extends StatelessWidget {
   }
 }
 
-/// Owns only the mode toggle. Rebuilds when [SplitterMode] changes.
-class _ModeToggle extends StatelessWidget {
-  const _ModeToggle();
+class _ModeToggleSection extends ConsumerWidget {
+  const _ModeToggleSection();
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<AmountSplitterBloc, AmountSplitterState>(
-      buildWhen: (AmountSplitterState previous, AmountSplitterState current) =>
-          previous.mode != current.mode,
-      builder: (BuildContext context, AmountSplitterState state) {
-        return SegmentedButton<SplitterMode>(
-          segments: const <ButtonSegment<SplitterMode>>[
-            ButtonSegment<SplitterMode>(
-              value: SplitterMode.manual,
-              label: Text('Manual'),
-            ),
-            ButtonSegment<SplitterMode>(
-              value: SplitterMode.auto,
-              label: Text('Auto'),
-            ),
-          ],
-          selected: <SplitterMode>{state.mode},
-          onSelectionChanged: (Set<SplitterMode> selection) {
-            context.read<AmountSplitterBloc>().add(
-              AmountSplitterEvent.modeChanged(selection.first),
-            );
-          },
-        );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final SplitterMode selectedMode = ref.watch(
+      amountSplitterProvider.select((AmountSplitterState state) => state.mode),
+    );
+
+    return SegmentedButton<SplitterMode>(
+      segments: const <ButtonSegment<SplitterMode>>[
+        ButtonSegment<SplitterMode>(
+          value: SplitterMode.manual,
+          label: Text('Manual'),
+        ),
+        ButtonSegment<SplitterMode>(
+          value: SplitterMode.auto,
+          label: Text('Auto'),
+        ),
+      ],
+      selected: <SplitterMode>{selectedMode},
+      onSelectionChanged: (Set<SplitterMode> selection) {
+        ref.read(amountSplitterProvider.notifier).modeChanged(selection.first);
       },
     );
   }
 }
 
-class _InputSection extends StatefulWidget {
+class _InputSection extends ConsumerStatefulWidget {
   const _InputSection();
 
   @override
-  State<_InputSection> createState() => _InputSectionState();
+  ConsumerState<_InputSection> createState() => _InputSectionState();
 }
 
-class _InputSectionState extends State<_InputSection> {
+class _InputSectionState extends ConsumerState<_InputSection> {
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _partCountController = TextEditingController();
 
@@ -109,6 +99,24 @@ class _InputSectionState extends State<_InputSection> {
 
   @override
   Widget build(BuildContext context) {
+    // We watch three booleans/derived flags. Each is a cheap comparison;
+    // using a single watch with a record keeps the rebuild scope tight.
+    final (
+      SplitterMode currentMode,
+      bool allowDecimal,
+      bool equalOnly,
+      bool canSplitRemaining,
+    ) = ref.watch(
+      amountSplitterProvider.select(
+        (AmountSplitterState state) => (
+          state.mode,
+          state.allowDecimal,
+          state.equalOnly,
+          state.canSplitRemaining,
+        ),
+      ),
+    );
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -124,85 +132,69 @@ class _InputSectionState extends State<_InputSection> {
                 labelText: 'Total amount',
                 hintText: 'e.g. 100',
               ),
-              onChanged: (String value) {
-                final double? parsed = double.tryParse(value);
-                context.read<AmountSplitterBloc>().add(
-                  AmountSplitterEvent.amountChanged(
-                    (parsed != null && parsed.isFinite) ? parsed : null,
-                  ),
-                );
+              onChanged: (String rawValue) {
+                final double? parsedAmount = double.tryParse(rawValue);
+                ref
+                    .read(amountSplitterProvider.notifier)
+                    .amountChanged(
+                      (parsedAmount != null && parsedAmount.isFinite)
+                          ? parsedAmount
+                          : null,
+                    );
               },
             ),
-            // Only the fields that depend on mode/allowDecimal live inside
-            // a nested builder, so typing in the amount field doesn't rebuild
-            // the whole card.
-            BlocBuilder<AmountSplitterBloc, AmountSplitterState>(
-              buildWhen:
-                  (AmountSplitterState previous, AmountSplitterState current) =>
-                      previous.mode != current.mode ||
-                      previous.allowDecimal != current.allowDecimal ||
-                      previous.equalOnly != current.equalOnly ||
-                      previous.canSplitRemaining != current.canSplitRemaining,
-              builder: (BuildContext context, AmountSplitterState state) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    if (state.mode == SplitterMode.auto) ...<Widget>[
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: _partCountController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Number of parts',
-                          hintText: 'e.g. 3',
-                        ),
-                        onChanged: (String value) {
-                          final int? parsed = int.tryParse(value);
-                          context.read<AmountSplitterBloc>().add(
-                            AmountSplitterEvent.partCountChanged(parsed),
-                          );
-                        },
-                      ),
-                    ],
-                    const SizedBox(height: 8),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Allow decimals'),
-                      value: state.allowDecimal,
-                      onChanged: (bool value) {
-                        context.read<AmountSplitterBloc>().add(
-                          AmountSplitterEvent.allowDecimalToggled(value),
-                        );
-                      },
-                    ),
-                    if (state.mode == SplitterMode.auto)
-                      SwitchListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Equal parts only'),
-                        value: state.equalOnly,
-                        onChanged: (bool value) {
-                          context.read<AmountSplitterBloc>().add(
-                            AmountSplitterEvent.equalOnlyToggled(value),
-                          );
-                        },
-                      ),
-                    if (state.mode == SplitterMode.manual) ...<Widget>[
-                      const SizedBox(height: 8),
-                      FilledButton(
-                        onPressed: state.canSplitRemaining
-                            ? () {
-                                context.read<AmountSplitterBloc>().add(
-                                  const AmountSplitterEvent.splitRequested(),
-                                );
-                              }
-                            : null,
-                        child: const Text('Split remaining in 2'),
-                      ),
-                    ],
-                  ],
-                );
+            if (currentMode == SplitterMode.auto) ...<Widget>[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _partCountController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Number of parts',
+                  hintText: 'e.g. 3',
+                ),
+                onChanged: (String rawValue) {
+                  final int? parsedCount = int.tryParse(rawValue);
+                  ref
+                      .read(amountSplitterProvider.notifier)
+                      .partCountChanged(parsedCount);
+                },
+              ),
+            ],
+            const SizedBox(height: 8),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Allow decimals'),
+              value: allowDecimal,
+              onChanged: (bool value) {
+                ref
+                    .read(amountSplitterProvider.notifier)
+                    .allowDecimalToggled(value);
               },
             ),
+            if (currentMode == SplitterMode.auto)
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Equal parts only'),
+                value: equalOnly,
+                onChanged: (bool value) {
+                  ref
+                      .read(amountSplitterProvider.notifier)
+                      .equalOnlyToggled(value);
+                },
+              ),
+            if (currentMode == SplitterMode.manual) ...<Widget>[
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: canSplitRemaining
+                    ? () {
+                        ref
+                            .read(amountSplitterProvider.notifier)
+                            .splitRemainingRequested();
+                      }
+                    : null,
+                child: const Text('Split remaining in 2'),
+              ),
+            ],
           ],
         ),
       ),
@@ -210,191 +202,215 @@ class _InputSectionState extends State<_InputSection> {
   }
 }
 
-/// Owns only the three stat values.
-class _StatsRow extends StatelessWidget {
-  const _StatsRow();
+class _StatsSection extends ConsumerWidget {
+  const _StatsSection();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final (
+      int totalUnits,
+      int assignedUnits,
+      int remainingUnits,
+      bool allowDecimal,
+    ) = ref.watch(
+      amountSplitterProvider.select(
+        (AmountSplitterState state) => (
+          state.totalUnits,
+          state.assignedUnits,
+          state.remainingUnits,
+          state.allowDecimal,
+        ),
+      ),
+    );
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: BlocBuilder<AmountSplitterBloc, AmountSplitterState>(
-          buildWhen:
-              (AmountSplitterState previous, AmountSplitterState current) =>
-                  previous.totalUnits != current.totalUnits ||
-                  previous.assignedUnits != current.assignedUnits ||
-                  previous.remainingUnits != current.remainingUnits ||
-                  previous.allowDecimal != current.allowDecimal,
-          builder: (BuildContext context, AmountSplitterState state) {
-            final List<(String, String, Color)> items =
-                <(String, String, Color)>[
-                  (
-                    'Total',
-                    formatAmount(
-                      state.totalUnits,
-                      allowDecimal: state.allowDecimal,
-                    ),
-                    context.colorScheme.onSurface,
-                  ),
-                  (
-                    'Assigned',
-                    formatAmount(
-                      state.assignedUnits,
-                      allowDecimal: state.allowDecimal,
-                    ),
-                    context.colorScheme.onSurface,
-                  ),
-                  (
-                    'Extra',
-                    formatAmount(
-                      state.remainingUnits,
-                      allowDecimal: state.allowDecimal,
-                    ),
-                    state.remainingUnits == 0
-                        ? context.colorScheme.primary
-                        : context.colorScheme.tertiary,
-                  ),
-                ];
-            return Row(
-              children: <Widget>[
-                for (final (String title, String value, Color color) in items)
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(title, style: context.textTheme.labelMedium),
-                        const SizedBox(height: 4),
-                        Text(
-                          value,
-                          style: context.textTheme.titleLarge?.copyWith(
-                            color: color,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            );
-          },
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: _StatColumn(
+                title: 'Total',
+                value: formatAmount(totalUnits, allowDecimal: allowDecimal),
+                color: context.colorScheme.onSurface,
+              ),
+            ),
+            Expanded(
+              child: _StatColumn(
+                title: 'Assigned',
+                value: formatAmount(assignedUnits, allowDecimal: allowDecimal),
+                color: context.colorScheme.onSurface,
+              ),
+            ),
+            Expanded(
+              child: _StatColumn(
+                title: 'Extra',
+                value: formatAmount(remainingUnits, allowDecimal: allowDecimal),
+                color: remainingUnits == 0
+                    ? context.colorScheme.primary
+                    : context.colorScheme.tertiary,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-/// Owns the "Parts (n)" header and the "Clear parts" action.
-class _PartsHeader extends StatelessWidget {
-  const _PartsHeader();
+class _StatColumn extends StatelessWidget {
+  const _StatColumn({
+    required this.title,
+    required this.value,
+    required this.color,
+  });
+
+  final String title;
+  final String value;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<AmountSplitterBloc, AmountSplitterState>(
-      buildWhen: (AmountSplitterState previous, AmountSplitterState current) =>
-          previous.mode != current.mode ||
-          previous.visibleParts.length != current.visibleParts.length,
-      builder: (BuildContext context, AmountSplitterState state) {
-        final bool isManualMode = state.mode == SplitterMode.manual;
-        final bool isEmpty = state.visibleParts.isEmpty;
-        return Row(
-          children: <Widget>[
-            Text(
-              'Parts',
-              style: context.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Chip(label: Text('${state.visibleParts.length}')),
-            const Spacer(),
-            if (isManualMode)
-              TextButton(
-                onPressed: isEmpty
-                    ? null
-                    : () {
-                        context.read<AmountSplitterBloc>().add(
-                          const AmountSplitterEvent.clearRequested(),
-                        );
-                      },
-                child: const Text('Clear parts'),
-              ),
-          ],
-        );
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(title, style: context.textTheme.labelMedium),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: context.textTheme.titleLarge?.copyWith(color: color),
+        ),
+      ],
     );
   }
 }
 
-/// The only scrollable part of the page.
-class _PartsList extends StatelessWidget {
-  const _PartsList();
+class _PartsHeaderSection extends ConsumerWidget {
+  const _PartsHeaderSection();
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<AmountSplitterBloc, AmountSplitterState>(
-      buildWhen: (AmountSplitterState previous, AmountSplitterState current) =>
-          previous.mode != current.mode ||
-          previous.allowDecimal != current.allowDecimal ||
-          previous.totalUnits != current.totalUnits ||
-          !identical(previous.visibleParts, current.visibleParts),
-      builder: (BuildContext context, AmountSplitterState state) {
-        final List<SplitPart> parts = state.visibleParts;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final (SplitterMode currentMode, int visiblePartsCount) = ref.watch(
+      amountSplitterProvider.select(
+        (AmountSplitterState state) => (state.mode, state.visibleParts.length),
+      ),
+    );
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (state.hasTooFewParts) ...<Widget>[
-              _TooFewPartsAlert(state: state),
-              const SizedBox(height: 8),
-            ],
-            if (parts.isEmpty)
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: context.colorScheme.outlineVariant,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    state.mode == SplitterMode.manual
-                        ? 'Enter an amount, then press "Split remaining in 2".'
-                        : 'Enter an amount and the number of parts.',
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              )
-            else
-              Expanded(
-                child: ListView.separated(
-                  padding: EdgeInsets.zero,
-                  itemCount: parts.length,
-                  separatorBuilder: (BuildContext context, int index) =>
-                      const SizedBox(height: 8),
-                  itemBuilder: (BuildContext context, int index) {
-                    return PartTile(
-                      part: parts[index],
-                      index: index,
-                      totalUnits: state.totalUnits,
-                      allowDecimal: state.allowDecimal,
-                      mode: state.mode,
-                    );
+    final bool isManualMode = currentMode == SplitterMode.manual;
+    final bool isEmpty = visiblePartsCount == 0;
+
+    return Row(
+      children: <Widget>[
+        Text(
+          'Parts',
+          style: context.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Chip(label: Text('$visiblePartsCount')),
+        const Spacer(),
+        if (isManualMode)
+          TextButton(
+            onPressed: isEmpty
+                ? null
+                : () {
+                    ref
+                        .read(amountSplitterProvider.notifier)
+                        .partsClearRequested();
                   },
-                ),
+            child: const Text('Clear parts'),
+          ),
+      ],
+    );
+  }
+}
+
+class _PartsListSection extends ConsumerWidget {
+  const _PartsListSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // We need the whole list plus a couple of derived flags. Watching
+    // via select with a record keeps the rebuild scope tight.
+    final (
+      SplitterMode currentMode,
+      bool allowDecimal,
+      int totalUnits,
+      List<SplitPart> visibleParts,
+      bool hasTooFewParts,
+      int targetPartCount,
+    ) = ref.watch(
+      amountSplitterProvider.select(
+        (AmountSplitterState state) => (
+          state.mode,
+          state.allowDecimal,
+          state.totalUnits,
+          state.visibleParts,
+          state.hasTooFewParts,
+          state.targetPartCount,
+        ),
+      ),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (hasTooFewParts) ...<Widget>[
+          _TooFewPartsAlert(
+            visiblePartsCount: visibleParts.length,
+            targetPartCount: targetPartCount,
+          ),
+          const SizedBox(height: 8),
+        ],
+        if (visibleParts.isEmpty)
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                border: Border.all(color: context.colorScheme.outlineVariant),
+                borderRadius: BorderRadius.circular(8),
               ),
-          ],
-        );
-      },
+              alignment: Alignment.center,
+              child: Text(
+                currentMode == SplitterMode.manual
+                    ? 'Enter an amount, then press "Split remaining in 2".'
+                    : 'Enter an amount and the number of parts.',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.separated(
+              padding: EdgeInsets.zero,
+              itemCount: visibleParts.length,
+              separatorBuilder: (BuildContext context, int index) =>
+                  const SizedBox(height: 8),
+              itemBuilder: (BuildContext context, int index) {
+                return PartTile(
+                  part: visibleParts[index],
+                  index: index,
+                  totalUnits: totalUnits,
+                  allowDecimal: allowDecimal,
+                  mode: currentMode,
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 }
 
 class _TooFewPartsAlert extends StatelessWidget {
-  const _TooFewPartsAlert({required this.state});
+  const _TooFewPartsAlert({
+    required this.visiblePartsCount,
+    required this.targetPartCount,
+  });
 
-  final AmountSplitterState state;
+  final int visiblePartsCount;
+  final int targetPartCount;
 
   @override
   Widget build(BuildContext context) {
@@ -405,7 +421,7 @@ class _TooFewPartsAlert extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        'Only ${state.visibleParts.length} of ${state.targetPartCount} parts '
+        'Only $visiblePartsCount of $targetPartCount parts '
         'could be made. Each part needs at least the smallest unit '
         '(1, or 0.01 with decimals).',
         style: TextStyle(color: context.colorScheme.onTertiaryContainer),
@@ -414,7 +430,7 @@ class _TooFewPartsAlert extends StatelessWidget {
   }
 }
 
-class PartTile extends StatelessWidget {
+class PartTile extends ConsumerWidget {
   const PartTile({
     super.key,
     required this.part,
@@ -431,7 +447,7 @@ class PartTile extends StatelessWidget {
   final SplitterMode mode;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final double sharePercent = totalUnits > 0
         ? (part.amount / totalUnits) * 100
         : 0;
@@ -448,11 +464,9 @@ class PartTile extends StatelessWidget {
               IconButton(
                 tooltip: 'Remove this part',
                 icon: const Icon(Icons.close),
-                onPressed: () {
-                  context.read<AmountSplitterBloc>().add(
-                    AmountSplitterEvent.removeRequested(part.id),
-                  );
-                },
+                onPressed: () => ref
+                    .read(amountSplitterProvider.notifier)
+                    .partRemoveRequested(part.id),
               ),
             CircleAvatar(
               radius: 14,
@@ -492,11 +506,9 @@ class PartTile extends StatelessWidget {
               const SizedBox(width: 8),
               OutlinedButton(
                 onPressed: canDivide
-                    ? () {
-                        context.read<AmountSplitterBloc>().add(
-                          AmountSplitterEvent.divideRequested(part.id),
-                        );
-                      }
+                    ? () => ref
+                          .read(amountSplitterProvider.notifier)
+                          .partDivideRequested(part.id)
                     : null,
                 child: const Text('÷ 2'),
               ),

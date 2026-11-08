@@ -10,3 +10,4 @@ analyzer:
 linter:
   rules:
     prefer_single_quotes: true
+    always_specify_types: true

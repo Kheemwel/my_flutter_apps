@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_flutter_apps/core/extensions/theme_x.dart';
 import 'package:my_flutter_apps/core/theme/accent_family.dart';
@@ -74,10 +75,10 @@ class _ResultsGrid extends ConsumerWidget {
     }
 
     return SliverLayoutBuilder(
-      builder: (context, constraints) {
+      builder: (BuildContext context, SliverConstraints constraints) {
         const int singleColumnBreakpoint = 450;
-        final width = constraints.crossAxisExtent;
-        final delegate = width < singleColumnBreakpoint
+        final double width = constraints.crossAxisExtent;
+        final SliverGridDelegate delegate = width < singleColumnBreakpoint
             ? const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 1,
                 mainAxisExtent: 220,
@@ -94,7 +95,8 @@ class _ResultsGrid extends ConsumerWidget {
           sliver: SliverGrid(
             gridDelegate: delegate,
             delegate: SliverChildBuilderDelegate(
-              (context, index) => _AppCard(entry: visible[index]),
+              (BuildContext context, int index) =>
+                  _AppCard(entry: visible[index]),
               childCount: visible.length,
             ),
           ),
@@ -123,7 +125,7 @@ class _SearchBarState extends ConsumerState<_SearchBar> {
   @override
   Widget build(BuildContext context) {
     final bool showClear = ref.watch(
-      homeProvider.select((s) => s.hasActiveFilters),
+      homeProvider.select((HomeState s) => s.hasActiveFilters),
     );
 
     return TextField(
@@ -162,7 +164,7 @@ class _FilterChipsRow extends ConsumerWidget {
     // Scope: rebuild only when the selected set changes.
     // The available tags are derived from the (static) catalog.
     final Set<String> selected = ref.watch(
-      homeProvider.select((s) => s.selectedTags),
+      homeProvider.select((HomeState s) => s.selectedTags),
     );
     final Set<String> allTags = const HomeState().collectTags(catalog);
 

@@ -6,7 +6,7 @@ part of 'routes.dart';
 // GoRouterGenerator
 // **************************************************************************
 
-List<RouteBase> get $appRoutes => [
+List<RouteBase> get $appRoutes => <RouteBase>[
   $homeRoute,
   $counterRoute,
   $oddsCalculatorRoute,

@@ -14,7 +14,7 @@ class MainApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const brightness = Brightness.dark;
+    const Brightness brightness = Brightness.dark;
 
     return MaterialApp.router(
       title: "Kheemwel's Flutter Apps",
@@ -27,7 +27,7 @@ class MainApp extends StatelessWidget {
           brightness: brightness,
         ),
         useMaterial3: true,
-        extensions: [AccentFamilies.forBrightness(brightness)],
+        extensions: <ThemeExtension<dynamic>>[AccentFamilies.forBrightness(brightness)],
       ),
     );
   }

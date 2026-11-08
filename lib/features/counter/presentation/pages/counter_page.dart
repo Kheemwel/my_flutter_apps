@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:my_flutter_apps/core/extensions/theme_x.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_flutter_apps/features/counter/presentation/notifier/counter_notifier.dart';
+import 'package:my_flutter_apps/features/counter/presentation/states/counter_state.dart';
 
 class CounterPage extends StatelessWidget {
   const CounterPage({super.key});
@@ -30,7 +31,7 @@ class _CounterView extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   spacing: 24,
-                  children: [
+                  children: <Widget>[
                     Text(
                       'Counter Demo',
                       style: context.textTheme.headlineSmall?.copyWith(
@@ -41,12 +42,12 @@ class _CounterView extends ConsumerWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         spacing: 12,
-                        children: [
+                        children: <Widget>[
                           Expanded(
                             child: _CountTile(
                               label: 'Count',
                               value: ref.watch(
-                                counterProvider.select((s) => s.value),
+                                counterProvider.select((CounterState s) => s.value),
                               ),
                               color: context.colorScheme.primary,
                             ),
@@ -55,7 +56,7 @@ class _CounterView extends ConsumerWidget {
                             child: _CountTile(
                               label: 'Doubled',
                               value: ref.watch(
-                                counterProvider.select((s) => s.doubled),
+                                counterProvider.select((CounterState s) => s.doubled),
                               ),
                               color: context.colorScheme.tertiary,
                             ),
@@ -80,11 +81,11 @@ class _CounterButtons extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final notifier = ref.read(counterProvider.notifier);
+    final CounterNotifier notifier = ref.read(counterProvider.notifier);
 
     return LayoutBuilder(
-      builder: (context, constraints) {
-        final buttons = <Widget>[
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final List<Widget> buttons = <Widget>[
           _decrementButton(notifier),
           _resetButton(notifier),
           _incrementButton(notifier),
@@ -146,7 +147,7 @@ class _CountTile extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
+        children: <Widget>[
           Text(
             label,
             style: TextStyle(

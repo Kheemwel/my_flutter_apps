@@ -6,6 +6,9 @@ class OddsCalculatorRoute extends GoRouteData with $OddsCalculatorRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) {
-    return MaterialPage(key: state.pageKey, child: const OddsCalculatorPage());
+    return MaterialPage<void>(
+      key: state.pageKey,
+      child: const OddsCalculatorPage(),
+    );
   }
 }

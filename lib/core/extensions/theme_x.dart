@@ -7,7 +7,7 @@ extension ThemeX on BuildContext {
   ColorScheme get colorScheme => theme.colorScheme;
   TextTheme get textTheme => theme.textTheme;
   AccentFamilies get accentFamilies {
-    final families = Theme.of(this).extension<AccentFamilies>();
+    final AccentFamilies? families = Theme.of(this).extension<AccentFamilies>();
     assert(
       families != null,
       'AccentFamilies not registered in ThemeData.extensions. '

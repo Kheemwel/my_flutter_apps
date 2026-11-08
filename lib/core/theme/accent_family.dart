@@ -40,7 +40,7 @@ class AccentFamily {
     Brightness brightness = Brightness.dark,
     DynamicSchemeVariant variant = DynamicSchemeVariant.tonalSpot,
   }) {
-    final scheme = ColorScheme.fromSeed(
+    final ColorScheme scheme = ColorScheme.fromSeed(
       seedColor: seed,
       brightness: brightness,
       dynamicSchemeVariant: variant,

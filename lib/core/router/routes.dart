@@ -15,5 +15,5 @@ part 'amount_splitter_routes.dart';
 final GoRouter router = GoRouter(
   routes: $appRoutes, // The generator aggregates all @TypedGoRoute from the entire library into this
   initialLocation: '/',
-  errorBuilder: (context, state) => const NotFoundPage(),
+  errorBuilder: (BuildContext context, GoRouterState state) => const NotFoundPage(),
 );

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:my_flutter_apps/core/extensions/theme_x.dart';
 import 'package:my_flutter_apps/core/router/routes.dart';
+import 'package:my_flutter_apps/core/theme/accent_families.dart';
 
 import 'app_entry.dart';
 
 /// Builds the list of all mini-apps, resolving accent colors from the theme.
 List<AppEntry> buildAppCatalog(BuildContext context) {
-  final accents = context.accentFamilies;
+  final AccentFamilies accents = context.accentFamilies;
 
   return <AppEntry>[
     AppEntry(

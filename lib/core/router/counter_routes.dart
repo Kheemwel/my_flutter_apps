@@ -6,6 +6,6 @@ class CounterRoute extends GoRouteData with $CounterRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) {
-    return MaterialPage(key: state.pageKey, child: const CounterPage());
+    return MaterialPage<void>(key: state.pageKey, child: const CounterPage());
   }
 }

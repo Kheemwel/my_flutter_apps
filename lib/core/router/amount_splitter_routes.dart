@@ -6,6 +6,9 @@ class AmountSplitterRoute extends GoRouteData with $AmountSplitterRoute {
 
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) {
-    return MaterialPage(key: state.pageKey, child: const AmountSplitterPage());
+    return MaterialPage<void>(
+      key: state.pageKey,
+      child: const AmountSplitterPage(),
+    );
   }
 }

@@ -27,11 +27,11 @@ class _AmountSplitterView extends StatelessWidget {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 750),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+            child: const Padding(
+              padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: const <Widget>[
+                children: <Widget>[
                   _ModeToggleSection(),
                   SizedBox(height: 16),
                   _InputSection(),

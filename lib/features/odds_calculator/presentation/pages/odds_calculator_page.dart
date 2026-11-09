@@ -46,7 +46,7 @@ class _OddsCalculatorView extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                _AttemptsSection(),
+                const _AttemptsSection(),
               ],
             ),
           ),

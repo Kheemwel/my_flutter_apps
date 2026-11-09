@@ -33,9 +33,9 @@ class _HomeView extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 1100),
             child: CustomScrollView(
               slivers: <Widget>[
-                SliverToBoxAdapter(
+                const SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                     child: _SearchBar(),
                   ),
                 ),

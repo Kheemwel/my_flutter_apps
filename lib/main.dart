@@ -27,7 +27,9 @@ class MainApp extends StatelessWidget {
           brightness: brightness,
         ),
         useMaterial3: true,
-        extensions: <ThemeExtension<dynamic>>[AccentFamilies.forBrightness(brightness)],
+        extensions: <ThemeExtension<dynamic>>[
+          AccentFamilies.forBrightness(brightness),
+        ],
       ),
     );
   }

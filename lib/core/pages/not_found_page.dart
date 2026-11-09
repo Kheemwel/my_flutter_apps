@@ -22,7 +22,7 @@ class NotFoundPage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () => HomeRoute().go(context),
+              onPressed: () => const HomeRoute().go(context),
               child: const Text('Go Home'),
             ),
           ],
